@@ -1,6 +1,6 @@
 # Quotation Configuration - Frontend
 
-Interfaz administrativa moderna y responsive para gestionar la configuración de márgenes de cotización. Construida con Next.js 15, Apollo Client y TailwindCSS.
+Interfaz administrativa moderna y responsive para gestionar la configuración de márgenes de cotización. Construida con Next.js 16, Apollo Client y TailwindCSS.
 
 ---
 
@@ -351,12 +351,13 @@ Cada hook tiene una responsabilidad única:
 
 ## Decisiones técnicas
 
-### ¿Por qué Next.js 15 con App Router?
+### ¿Por qué Next.js 16 con App Router?
 
 - **Server Components** por defecto → Mejor performance
 - **Client Components** solo donde se necesita interactividad
 - **Routing basado en archivos** → Más intuitivo
 - **Built-in optimization** → Imágenes, fonts, código
+- **React 19** → Últimas características de React
 
 ### ¿Por qué Apollo Client?
 
@@ -395,7 +396,6 @@ pnpm dev          # Desarrollo con hot-reload
 pnpm build        # Build para producción
 pnpm start        # Servidor de producción
 pnpm lint         # ESLint
-pnpm type-check   # TypeScript check sin emitir archivos
 ```
 
 ---
