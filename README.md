@@ -85,7 +85,7 @@ pnpm dev
 
 **Requisito previo:**
 - El backend GraphQL debe estar corriendo en `http://localhost:4000`
-- Ver: [Backend README](../laik-tech/README.md)
+- Ver: [Backend README](https://github.com/JavierLQR/quotation-config-assessment#-ubicación-de-entregables-backend)
 
 ---
 
@@ -205,7 +205,7 @@ Aplicación web administrativa que permite:
 
 - **Node.js** >= 20 — [descargar](https://nodejs.org/)
 - **pnpm** >= 9 — `npm install -g pnpm`
-- **Backend GraphQL corriendo** en `http://localhost:4000` (ver [backend README](../laik-tech/README.md))
+- **Backend GraphQL corriendo** en `http://localhost:4000` (ver [Backend README](https://github.com/JavierLQR/quotation-config-assessment))
 
 ---
 
