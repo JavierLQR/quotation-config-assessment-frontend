@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { UserPlus } from 'lucide-react'
 import {
   Dialog,
@@ -28,11 +28,14 @@ import type { CreateClientFormData } from '../../types/client-actions.types'
 
 interface CreateClientDialogProps {
   open: boolean
-  clientTypeId: number
+  /** Pre-selected type id. null = sin tipo (from unassigned section). */
+  clientTypeId: number | null
   clientTypes: ClientType[]
   onClose: () => void
   onSubmit: (data: CreateClientFormData) => Promise<void>
 }
+
+const UNASSIGNED_VALUE = '__none__'
 
 export function CreateClientDialog({
   open,
@@ -41,15 +44,35 @@ export function CreateClientDialog({
   onClose,
   onSubmit,
 }: CreateClientDialogProps) {
-  const [name, setName] = useState('')
-  const [basePrice, setBasePrice] = useState('')
+  const initialTypeValue =
+    clientTypeId !== null ? String(clientTypeId) : UNASSIGNED_VALUE
+
+  const [name, setName] = useState<string>('')
+  const [selectedTypeValue, setSelectedTypeValue] =
+    useState<string>(initialTypeValue)
+  const [basePrice, setBasePrice] = useState<string>('')
   const [strategy, setStrategy] = useState<PricingStrategy>('POR_ESTRUCTURA')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
 
-  const clientType = clientTypes.find((ct) => ct.id === clientTypeId)
+  const handleOpenChange = useCallback(
+    (isOpen: boolean) => {
+      if (isOpen) {
+        setSelectedTypeValue(
+          clientTypeId !== null ? String(clientTypeId) : UNASSIGNED_VALUE,
+        )
+      } else {
+        setName('')
+        setBasePrice('')
+        setStrategy('POR_ESTRUCTURA')
+        setError('')
+        onClose()
+      }
+    },
+    [clientTypeId, onClose],
+  )
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!name.trim()) {
       setError('El nombre es obligatorio')
@@ -58,9 +81,14 @@ export function CreateClientDialog({
     setError('')
     setLoading(true)
     try {
+      const resolvedTypeId =
+        selectedTypeValue === UNASSIGNED_VALUE
+          ? null
+          : parseInt(selectedTypeValue, 10)
+
       await onSubmit({
         name: name.trim(),
-        clientTypeId,
+        clientTypeId: resolvedTypeId,
         basePrice: basePrice ? parseFloat(basePrice) : undefined,
         pricingStrategy: strategy,
       })
@@ -75,15 +103,7 @@ export function CreateClientDialog({
     }
   }
 
-  function handleOpenChange(open: boolean) {
-    if (!open) {
-      setName('')
-      setBasePrice('')
-      setStrategy('POR_ESTRUCTURA')
-      setError('')
-      onClose()
-    }
-  }
+  const preselectedType = clientTypes.find((ct) => ct.id === clientTypeId)
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -96,7 +116,16 @@ export function CreateClientDialog({
             <div>
               <DialogTitle>Nuevo cliente</DialogTitle>
               <DialogDescription>
-                Tipo: <span className="font-medium text-slate-700">{clientType?.name ?? '—'}</span>
+                {preselectedType ? (
+                  <>
+                    Tipo:{' '}
+                    <span className="font-medium text-slate-700">
+                      {preselectedType.name}
+                    </span>
+                  </>
+                ) : (
+                  'Completa los datos del nuevo cliente'
+                )}
               </DialogDescription>
             </div>
           </div>
@@ -116,8 +145,33 @@ export function CreateClientDialog({
           </div>
 
           <div className="space-y-1.5">
+            <Label>Tipo de cliente</Label>
+            <Select
+              value={selectedTypeValue}
+              onValueChange={setSelectedTypeValue}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sin tipo de cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNASSIGNED_VALUE} className="text-slate-400">
+                  Sin tipo de cliente
+                </SelectItem>
+                {clientTypes.map((ct) => (
+                  <SelectItem key={ct.id} value={String(ct.id)}>
+                    {ct.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="create-price">
-              Precio base <span className="text-slate-400 font-normal">(USD, opcional)</span>
+              Precio base{' '}
+              <span className="text-slate-400 font-normal">
+                (USD, opcional)
+              </span>
             </Label>
             <Input
               id="create-price"
@@ -132,7 +186,10 @@ export function CreateClientDialog({
 
           <div className="space-y-1.5">
             <Label>Vinculación de precio</Label>
-            <Select value={strategy} onValueChange={(v) => setStrategy(v as PricingStrategy)}>
+            <Select
+              value={strategy}
+              onValueChange={(v) => setStrategy(v as PricingStrategy)}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>

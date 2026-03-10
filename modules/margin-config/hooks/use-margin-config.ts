@@ -26,7 +26,10 @@ const UNASSIGNED_CLIENT_TYPE: ClientType = {
 }
 
 export function useMarginConfig() {
-  const [userSelectedPlantId, setUserSelectedPlantId] = useState<number | null>(null)
+  const [userSelectedPlantId, setUserSelectedPlantId] = useState<number | null>(
+    null,
+  )
+  const [hasLoadedData, setHasLoadedData] = useState(false)
 
   const { data: plantsData, loading: plantsLoading } = useQuery<{
     plants: { data: Plant[] }
@@ -43,6 +46,9 @@ export function useMarginConfig() {
   const [fetchMargins, { data: marginsData, loading: marginsLoading }] =
     useLazyQuery<{ marginsByPlant: { data: MarginConfig[] } }>(
       GET_MARGINS_BY_PLANT,
+      {
+        fetchPolicy: 'cache-first',
+      },
     )
 
   const plants = useMemo<Plant[]>(
@@ -65,7 +71,7 @@ export function useMarginConfig() {
   const selectedPlantId = userSelectedPlantId ?? plants[0]?.id ?? null
 
   const clientTypeRows = useMemo<ClientTypeRow[]>(() => {
-    const clientTypeIds = new Set(clientTypes.map((ct) => ct.id))
+    const clientTypeIds = new Set<number | null>(clientTypes.map((ct) => ct.id))
 
     const rows: ClientTypeRow[] = clientTypes.map((ct) => ({
       clientType: ct,
@@ -76,29 +82,45 @@ export function useMarginConfig() {
       (c) => !clientTypeIds.has(c.clientTypeId),
     )
 
-    if (unassigned.length > 0) {
+    if (unassigned.length > 0)
       rows.push({
         clientType: UNASSIGNED_CLIENT_TYPE,
         clients: unassigned,
       })
-    }
 
     return rows
   }, [clientTypes, allClients])
 
-  const { draft, updateMargin, resetDraft, hasChanges } =
+  const { draft, userEdits, updateMargin, resetDraft, hasChanges } =
     useMarginDraft(margins)
-  const { saveStatus, saveMessage, save, resetStatus } =
-    useSaveMargin(selectedPlantId)
+
+  const refetchMargins = useCallback(async () => {
+    if (!selectedPlantId) return
+
+    const result = await fetchMargins({
+      variables: { plantId: selectedPlantId },
+    })
+
+    if (result.data?.marginsByPlant?.data) resetDraft()
+  }, [fetchMargins, selectedPlantId, resetDraft])
+
+  const { saveStatus, save, resetStatus } = useSaveMargin(
+    selectedPlantId,
+    refetchMargins,
+  )
 
   useEffect(() => {
     if (!selectedPlantId) return
-    void fetchMargins({ variables: { plantId: selectedPlantId } })
+
+    void fetchMargins({ variables: { plantId: selectedPlantId } }).then(() => {
+      setHasLoadedData(true)
+    })
   }, [selectedPlantId, fetchMargins])
 
   const selectPlant = useCallback(
     (plantId: number) => {
       setUserSelectedPlantId(plantId)
+      setHasLoadedData(false)
       resetDraft()
       resetStatus()
     },
@@ -113,7 +135,9 @@ export function useMarginConfig() {
     [updateMargin, resetStatus],
   )
 
-  const handleSave = useCallback(() => save(draft), [save, draft])
+  const handleSave = useCallback(async () => {
+    await save(userEdits)
+  }, [save, userEdits])
 
   return {
     plants,
@@ -121,9 +145,8 @@ export function useMarginConfig() {
     draft,
     selectedPlantId,
     isLoading: plantsLoading || clientTypesLoading || clientsLoading,
-    marginsLoading,
+    marginsLoading: marginsLoading && !hasLoadedData,
     saveStatus,
-    saveMessage,
     hasChanges,
     selectPlant,
     updateMargin: handleUpdateMargin,

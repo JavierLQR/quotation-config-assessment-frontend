@@ -1,11 +1,11 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { useMutation, useLazyQuery } from '@apollo/client/react'
+import { toast } from 'sonner'
+import { useMutation } from '@apollo/client/react'
 import { SAVE_PLANT_CONFIG } from '../graphql/mutations'
 import { GET_MARGINS_BY_PLANT } from '../graphql/queries'
 import type { VolumeRange } from '@/shared/types/enums'
-import type { MarginConfig } from '@/shared/types/entities'
 import type {
   MarginDraft,
   MarginEntry,
@@ -14,7 +14,9 @@ import type {
   SaveStatus,
 } from '../types'
 
-function parseMarginKey(key: string): Pick<MarginEntry, 'clientTypeId' | 'clientId'> {
+function parseMarginKey(
+  key: string,
+): Pick<MarginEntry, 'clientTypeId' | 'clientId'> {
   const [prefix, rawId] = key.split('_') as [string, string]
   const id = parseInt(rawId, 10)
   return prefix === 'type' ? { clientTypeId: id } : { clientId: id }
@@ -32,23 +34,35 @@ function buildMarginEntries(draft: MarginDraft): MarginEntry[] {
   )
 }
 
-export function useSaveMargin(plantId: number | null) {
+export function useSaveMargin(
+  plantId: number | null | undefined,
+  onRefetch: () => Promise<void>,
+) {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
-  const [saveMessage, setSaveMessage] = useState('')
 
-  const [savePlantConfig] = useMutation<SavePlantConfigPayload>(SAVE_PLANT_CONFIG)
-  const [fetchMargins] = useLazyQuery<{ marginsByPlant: { data: MarginConfig[] } }>(
-    GET_MARGINS_BY_PLANT,
+  const [savePlantConfig] = useMutation<SavePlantConfigPayload>(
+    SAVE_PLANT_CONFIG,
+    {
+      refetchQueries: [
+        {
+          query: GET_MARGINS_BY_PLANT,
+          variables: { plantId },
+        },
+      ],
+      awaitRefetchQueries: true,
+    },
   )
 
   const save = useCallback(
-    async (draft: MarginDraft) => {
+    async (userEdits: MarginDraft): Promise<void> => {
       if (!plantId) return
       setSaveStatus('saving')
 
+      const margins = buildMarginEntries(userEdits)
+
       const input: SavePlantConfigInput = {
         plantId,
-        margins: buildMarginEntries(draft),
+        margins,
       }
 
       try {
@@ -57,22 +71,27 @@ export function useSaveMargin(plantId: number | null) {
 
         if (!payload?.success) {
           setSaveStatus('error')
-          setSaveMessage(payload?.message ?? 'Error al guardar')
+          toast.error('Error al guardar', {
+            description: payload?.message ?? 'Intenta nuevamente',
+          })
           return
         }
 
+        await onRefetch()
+
         setSaveStatus('success')
-        setSaveMessage(`${payload.data} márgenes guardados`)
-        await fetchMargins({ variables: { plantId } })
+        toast.success('Cambios guardados')
       } catch (err) {
         setSaveStatus('error')
-        setSaveMessage(err instanceof Error ? err.message : 'Error desconocido')
+        toast.error('Error al guardar', {
+          description: err instanceof Error ? err.message : 'Error desconocido',
+        })
       }
     },
-    [plantId, savePlantConfig, fetchMargins],
+    [plantId, savePlantConfig, onRefetch],
   )
 
   const resetStatus = useCallback(() => setSaveStatus('idle'), [])
 
-  return { saveStatus, saveMessage, save, resetStatus }
+  return { saveStatus, save, resetStatus }
 }

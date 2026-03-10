@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Users, Filter } from 'lucide-react'
+import { Users, SlidersHorizontal } from 'lucide-react'
 import { TableSkeleton } from './table-skeleton'
 import { TableHeader } from './table-header'
 import { ClientTypeGroup } from './client-type-group'
@@ -21,10 +21,9 @@ interface MarginTableProps {
   loading: boolean
   disabled: boolean
   onUpdateMargin: (key: string, volumeRange: VolumeRange, value: number | null) => void
-  onAddClient?: (clientTypeId: number) => void
+  onAddClient?: (clientTypeId: number | null) => void
   onEditClient?: (client: Client) => void
   onChangePricingStrategy?: (clientId: number, strategy: PricingStrategy) => void
-  onChangeTypePricingStrategy?: (clientTypeId: number, strategy: PricingStrategy) => void
 }
 
 export function MarginTable({
@@ -36,7 +35,6 @@ export function MarginTable({
   onAddClient,
   onEditClient,
   onChangePricingStrategy,
-  onChangeTypePricingStrategy,
 }: MarginTableProps) {
   const [filterTypeId, setFilterTypeId] = useState<string>('all')
 
@@ -49,7 +47,7 @@ export function MarginTable({
 
   if (clientTypeRows.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 py-20 text-slate-400">
+      <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 py-16 text-slate-400">
         <Users className="h-10 w-10 mb-3 opacity-40" />
         <p className="text-sm">No hay tipos de clientes configurados</p>
       </div>
@@ -58,11 +56,14 @@ export function MarginTable({
 
   return (
     <div className="space-y-3">
+      {/* Filter bar */}
       <div className="flex items-center gap-2">
-        <Filter className="h-4 w-4 text-slate-400" />
-        <span className="text-xs font-medium text-slate-500">Filtrar por tipo:</span>
+        <SlidersHorizontal className="h-4 w-4 text-slate-400 shrink-0" />
+        <span className="text-xs font-medium text-slate-500 hidden sm:inline shrink-0">
+          Filtrar por tipo:
+        </span>
         <Select value={filterTypeId} onValueChange={setFilterTypeId}>
-          <SelectTrigger className="h-8 w-52 text-xs">
+          <SelectTrigger className="h-8 w-full sm:w-52 text-xs">
             <SelectValue placeholder="Todos los tipos" />
           </SelectTrigger>
           <SelectContent>
@@ -76,21 +77,23 @@ export function MarginTable({
         </Select>
       </div>
 
-      <div className="space-y-1 overflow-x-auto pb-2">
-        <TableHeader />
-        {filteredRows.map((row) => (
-          <ClientTypeGroup
-            key={row.clientType.id}
-            row={row}
-            draft={draft}
-            disabled={disabled}
-            onUpdateMargin={onUpdateMargin}
-            onAddClient={onAddClient}
-            onEditClient={onEditClient}
-            onChangePricingStrategy={onChangePricingStrategy}
-            onChangeTypePricingStrategy={onChangeTypePricingStrategy}
-          />
-        ))}
+      {/* Scrollable table with sticky first column */}
+      <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+        <div className="min-w-max">
+          <TableHeader />
+          {filteredRows.map((row) => (
+            <ClientTypeGroup
+              key={row.clientType.id}
+              row={row}
+              draft={draft}
+              disabled={disabled}
+              onUpdateMargin={onUpdateMargin}
+              onAddClient={onAddClient}
+              onEditClient={onEditClient}
+              onChangePricingStrategy={onChangePricingStrategy}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )

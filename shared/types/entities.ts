@@ -19,7 +19,7 @@ export interface ClientType {
 export interface Client {
   id: number
   name: string
-  clientTypeId: number
+  clientTypeId: number | null
   basePrice: number | null
   pricingStrategy: PricingStrategy | null
   createdAt: string

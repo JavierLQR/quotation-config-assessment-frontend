@@ -14,19 +14,20 @@ export function ContextBar({ selectedPlant, clientTypeRows, hasChanges }: Contex
   const totalClients = clientTypeRows.reduce((acc, r) => acc + r.clients.length, 0)
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2">
         {selectedPlant ? (
           <>
             <h2 className="text-base font-semibold text-slate-800">{selectedPlant.name}</h2>
             <Badge variant="secondary">
-              {clientTypeRows.length} tipo{clientTypeRows.length !== 1 ? 's' : ''} de cliente
+              {clientTypeRows.length} tipo{clientTypeRows.length !== 1 ? 's' : ''}
             </Badge>
             <Badge variant="secondary">{totalClients} clientes</Badge>
             {hasChanges && (
               <Badge variant="warning" className="gap-1">
                 <AlertTriangle className="h-3 w-3" />
-                Cambios sin guardar
+                <span className="hidden xs:inline">Cambios sin guardar</span>
+                <span className="xs:hidden">Sin guardar</span>
               </Badge>
             )}
           </>

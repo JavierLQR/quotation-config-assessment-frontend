@@ -21,9 +21,16 @@ interface ClientRowProps {
   index: number
   draft: MarginDraft
   disabled: boolean
-  onUpdateMargin: (key: string, volumeRange: VolumeRange, value: number | null) => void
+  onUpdateMargin: (
+    key: string,
+    volumeRange: VolumeRange,
+    value: number | null,
+  ) => void
   onEditClient?: (client: Client) => void
-  onChangePricingStrategy?: (clientId: number, strategy: PricingStrategy) => void
+  onChangePricingStrategy?: (
+    clientId: number,
+    strategy: PricingStrategy,
+  ) => void
 }
 
 export function ClientRow({
@@ -38,34 +45,56 @@ export function ClientRow({
 }: ClientRowProps) {
   const clientKey = `client_${client.id}`
   const isEven = index % 2 === 0
-  const effectiveBasePrice = client.basePrice ?? clientType.basePrice
-  const effectiveStrategy = client.pricingStrategy ?? clientType.pricingStrategy
+
+  const effectiveBasePrice =
+    client.basePrice ?? (clientType.id !== -1 ? clientType.basePrice : null)
+
+  const effectiveStrategy =
+    client.pricingStrategy ??
+    (clientType.id !== -1 ? clientType.pricingStrategy : 'POR_ESTRUCTURA')
+
+  const rowBg = isEven ? 'bg-white' : 'bg-slate-50/50'
 
   return (
     <div
       className={cn(
-        'flex items-center px-4 py-2.5 border-t border-slate-100 min-w-max group/row',
-        isEven ? 'bg-white' : 'bg-slate-50/50',
-        'hover:bg-blue-50/30 transition-colors',
+        'flex items-center border-t border-slate-100 hover:bg-blue-50/30 transition-colors',
+        rowBg,
       )}
     >
-      <div className="w-44 shrink-0 pl-6 flex items-center gap-1.5">
-        <span className="text-sm text-slate-700 font-medium truncate">{client.name}</span>
+      {/* Sticky name column */}
+      <div
+        className={cn(
+          'sticky left-0 z-10 w-44 shrink-0 px-4 py-2.5 flex items-center gap-1.5 border-r border-slate-100',
+          rowBg,
+        )}
+      >
+        <span className="text-sm text-slate-700 font-medium truncate flex-1">
+          {client.name}
+        </span>
         {onEditClient && (
           <button
             onClick={() => onEditClient(client)}
-            className="p-0.5 rounded hover:bg-slate-200 text-slate-300 hover:text-slate-600 transition-colors"
+            className="p-0.5 rounded hover:bg-slate-200 text-slate-300 hover:text-slate-600 transition-colors shrink-0"
             title="Editar cliente"
           >
             <Pencil className="h-3 w-3" />
           </button>
         )}
       </div>
-      <div className="w-28 shrink-0 text-sm text-slate-600 text-right pr-4 tabular-nums">
-        {effectiveBasePrice.toLocaleString('en-US', { minimumFractionDigits: 0 })}
-        <span className="text-[10px] text-slate-400 ml-0.5">USD</span>
+      <div className="w-28 shrink-0 text-sm text-slate-600 text-right pr-4 py-2.5 tabular-nums">
+        {effectiveBasePrice !== null ? (
+          <>
+            {effectiveBasePrice.toLocaleString('en-US', {
+              minimumFractionDigits: 0,
+            })}
+            <span className="text-[10px] text-slate-400 ml-0.5">USD</span>
+          </>
+        ) : (
+          <span className="text-slate-300">—</span>
+        )}
       </div>
-      <div className="w-36 shrink-0 pr-4">
+      <div className="w-36 shrink-0 pr-4 py-2.5">
         {onChangePricingStrategy ? (
           <Select
             value={effectiveStrategy}
@@ -92,7 +121,7 @@ export function ClientRow({
         )}
       </div>
       {VOLUME_RANGES.map((vr) => (
-        <div key={vr} className="w-20 shrink-0 flex justify-center">
+        <div key={vr} className="w-20 shrink-0 flex justify-center py-1.5">
           <MarginCell
             value={draft[clientKey]?.[vr] ?? null}
             onChange={(val) => onUpdateMargin(clientKey, vr, val)}

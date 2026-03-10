@@ -10,10 +10,9 @@ interface MarginPanelProps {
   loading: boolean
   disabled: boolean
   onUpdateMargin: (key: string, volumeRange: VolumeRange, value: number | null) => void
-  onAddClient?: (clientTypeId: number) => void
+  onAddClient?: (clientTypeId: number | null) => void
   onEditClient?: (client: Client) => void
   onChangePricingStrategy?: (clientId: number, strategy: PricingStrategy) => void
-  onChangeTypePricingStrategy?: (clientTypeId: number, strategy: PricingStrategy) => void
 }
 
 export function MarginPanel({
@@ -25,19 +24,18 @@ export function MarginPanel({
   onAddClient,
   onEditClient,
   onChangePricingStrategy,
-  onChangeTypePricingStrategy,
 }: MarginPanelProps) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-700">
-          Márgenes por tipo de cliente y volumen
+      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-slate-100 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-slate-700 shrink-0">
+          Márgenes por volumen
         </h3>
-        <p className="text-xs text-slate-400">
-          Haz clic en una celda para editar · Enter para confirmar · Esc para cancelar
+        <p className="hidden md:block text-xs text-slate-400 text-right">
+          Clic en celda para editar · Enter confirmar · Esc cancelar
         </p>
       </div>
-      <div className="p-4">
+      <div className="p-2 sm:p-4">
         <MarginTable
           clientTypeRows={clientTypeRows}
           draft={draft}
@@ -47,7 +45,6 @@ export function MarginPanel({
           onAddClient={onAddClient}
           onEditClient={onEditClient}
           onChangePricingStrategy={onChangePricingStrategy}
-          onChangeTypePricingStrategy={onChangeTypePricingStrategy}
         />
       </div>
     </div>

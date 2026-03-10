@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Pencil } from 'lucide-react'
 import {
   Dialog,
@@ -23,38 +23,53 @@ import {
 } from '@/shared/components/ui/select'
 import { PRICING_STRATEGY_LABELS } from '@/shared/constants/pricing-strategy'
 import type { PricingStrategy } from '@/shared/types/enums'
-import type { Client } from '@/shared/types/entities'
+import type { Client, ClientType } from '@/shared/types/entities'
 import type { EditClientFormData } from '../../types/client-actions.types'
 
 interface EditClientDialogProps {
   client: Client | null
+  clientTypes: ClientType[]
   open: boolean
   onClose: () => void
   onSubmit: (data: EditClientFormData) => Promise<void>
 }
 
+const UNASSIGNED_VALUE = '__none__'
+
 export function EditClientDialog({
   client,
+  clientTypes,
   open,
   onClose,
   onSubmit,
 }: EditClientDialogProps) {
-  const [name, setName] = useState('')
-  const [basePrice, setBasePrice] = useState('')
+  const [name, setName] = useState<string>('')
+  const [selectedTypeValue, setSelectedTypeValue] =
+    useState<string>(UNASSIGNED_VALUE)
+  const [basePrice, setBasePrice] = useState<string>('')
   const [strategy, setStrategy] = useState<PricingStrategy>('POR_ESTRUCTURA')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string>('')
 
   useEffect(() => {
     if (client) {
       setName(client.name)
+      setSelectedTypeValue(
+        client.clientTypeId !== null
+          ? String(client.clientTypeId)
+          : UNASSIGNED_VALUE,
+      )
       setBasePrice(client.basePrice?.toString() ?? '')
-      setStrategy((client.pricingStrategy as PricingStrategy) ?? 'POR_ESTRUCTURA')
+      setStrategy(
+        (client.pricingStrategy as PricingStrategy) ?? 'POR_ESTRUCTURA',
+      )
       setError('')
     }
   }, [client])
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(
+    e: React.SyntheticEvent<HTMLFormElement>,
+  ): Promise<void> {
     e.preventDefault()
     if (!name.trim()) {
       setError('El nombre es obligatorio')
@@ -64,9 +79,15 @@ export function EditClientDialog({
     setError('')
     setLoading(true)
     try {
+      const resolvedTypeId =
+        selectedTypeValue === UNASSIGNED_VALUE
+          ? null
+          : parseInt(selectedTypeValue, 10)
+
       await onSubmit({
         id: client.id,
         name: name.trim(),
+        clientTypeId: resolvedTypeId,
         basePrice: basePrice ? parseFloat(basePrice) : undefined,
         pricingStrategy: strategy,
       })
@@ -78,12 +99,15 @@ export function EditClientDialog({
     }
   }
 
-  function handleOpenChange(open: boolean) {
-    if (!open) {
-      setError('')
-      onClose()
-    }
-  }
+  const handleOpenChange = useCallback(
+    (isOpen: boolean) => {
+      if (!isOpen) {
+        setError('')
+        onClose()
+      }
+    },
+    [onClose],
+  )
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -97,7 +121,9 @@ export function EditClientDialog({
               <DialogTitle>Editar cliente</DialogTitle>
               <DialogDescription>
                 Modifica los datos de{' '}
-                <span className="font-medium text-slate-700">{client?.name}</span>
+                <span className="font-medium text-slate-700">
+                  {client?.name}
+                </span>
               </DialogDescription>
             </div>
           </div>
@@ -116,8 +142,33 @@ export function EditClientDialog({
           </div>
 
           <div className="space-y-1.5">
+            <Label>Tipo de cliente</Label>
+            <Select
+              value={selectedTypeValue}
+              onValueChange={setSelectedTypeValue}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sin tipo de cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNASSIGNED_VALUE} className="text-slate-400">
+                  Sin tipo de cliente
+                </SelectItem>
+                {clientTypes.map((ct) => (
+                  <SelectItem key={ct.id} value={String(ct.id)}>
+                    {ct.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
             <Label htmlFor="edit-price">
-              Precio base <span className="text-slate-400 font-normal">(USD, opcional)</span>
+              Precio base{' '}
+              <span className="text-slate-400 font-normal">
+                (USD, opcional)
+              </span>
             </Label>
             <Input
               id="edit-price"
@@ -132,7 +183,10 @@ export function EditClientDialog({
 
           <div className="space-y-1.5">
             <Label>Vinculación de precio</Label>
-            <Select value={strategy} onValueChange={(v) => setStrategy(v as PricingStrategy)}>
+            <Select
+              value={strategy}
+              onValueChange={(v) => setStrategy(v as PricingStrategy)}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>

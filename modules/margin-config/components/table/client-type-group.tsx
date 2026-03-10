@@ -12,10 +12,9 @@ interface ClientTypeGroupProps {
   draft: MarginDraft
   disabled: boolean
   onUpdateMargin: (key: string, volumeRange: VolumeRange, value: number | null) => void
-  onAddClient?: (clientTypeId: number) => void
+  onAddClient?: (clientTypeId: number | null) => void
   onEditClient?: (client: Client) => void
   onChangePricingStrategy?: (clientId: number, strategy: PricingStrategy) => void
-  onChangeTypePricingStrategy?: (clientTypeId: number, strategy: PricingStrategy) => void
 }
 
 export function ClientTypeGroup({
@@ -26,13 +25,12 @@ export function ClientTypeGroup({
   onAddClient,
   onEditClient,
   onChangePricingStrategy,
-  onChangeTypePricingStrategy,
 }: ClientTypeGroupProps) {
   const [expanded, setExpanded] = useState(true)
   const { clientType, clients } = row
 
   return (
-    <div className="rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+    <div className="border-b border-slate-200">
       <div className="bg-slate-800 text-white">
         <ClientTypeHeader
           clientType={clientType}
@@ -41,13 +39,7 @@ export function ClientTypeGroup({
           onToggle={() => setExpanded((prev) => !prev)}
           onAddClient={onAddClient}
         />
-        <ClientTypeMarginRow
-          clientType={clientType}
-          draft={draft}
-          disabled={disabled}
-          onUpdateMargin={onUpdateMargin}
-          onChangeTypePricingStrategy={onChangeTypePricingStrategy}
-        />
+        <ClientTypeMarginRow clientType={clientType} />
       </div>
 
       {expanded && (

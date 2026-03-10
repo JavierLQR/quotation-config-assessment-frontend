@@ -65,6 +65,7 @@ export function useMarginDraft(margins: MarginConfig[]) {
 
   return {
     draft,
+    userEdits,
     updateMargin,
     resetDraft,
     hasChanges: Object.keys(userEdits).length > 0,

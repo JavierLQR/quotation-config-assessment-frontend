@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/shared/components/ui/select'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { cn } from '@/shared/lib/utils'
 import type { Plant } from '@/shared/types/entities'
 
 interface PlantSelectorProps {
@@ -16,6 +17,7 @@ interface PlantSelectorProps {
   selectedPlantId: number | null
   loading: boolean
   onSelect: (plantId: number) => void
+  fullWidth?: boolean
 }
 
 export function PlantSelector({
@@ -23,22 +25,23 @@ export function PlantSelector({
   selectedPlantId,
   loading,
   onSelect,
+  fullWidth = false,
 }: PlantSelectorProps) {
   if (loading) {
-    return <Skeleton className="h-10 w-72" />
+    return <Skeleton className={cn('h-9', fullWidth ? 'w-full' : 'w-64')} />
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex items-center gap-2 text-slate-600">
-        <Factory className="h-5 w-5" />
-        <span className="text-sm font-medium">Planta</span>
+    <div className={cn('flex items-center gap-2', fullWidth && 'w-full')}>
+      <div className="flex items-center gap-1.5 text-slate-600 shrink-0">
+        <Factory className="h-4 w-4" />
+        <span className="text-sm font-medium hidden xs:block">Planta</span>
       </div>
       <Select
         value={selectedPlantId?.toString() ?? ''}
         onValueChange={(v) => onSelect(parseInt(v, 10))}
       >
-        <SelectTrigger className="w-72">
+        <SelectTrigger className={cn(fullWidth ? 'w-full' : 'w-56 sm:w-64')}>
           <SelectValue placeholder="Selecciona una planta..." />
         </SelectTrigger>
         <SelectContent>
