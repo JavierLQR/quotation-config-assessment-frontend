@@ -1,0 +1,2 @@
+export const LOW_MARGIN_THRESHOLD = 5
+export const WARN_MARGIN_THRESHOLD = 10
