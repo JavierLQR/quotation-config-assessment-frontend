@@ -437,6 +437,283 @@ pnpm lint         # ESLint
 
 ---
 
+## Git Workflow y Branching Strategy
+
+### Convención de Branching
+
+Este proyecto frontend sigue la misma estrategia de Git Flow que el backend:
+
+#### Branches principales:
+
+- **`main`** — Código en producción (solo merges desde `staging` después de QA)
+- **`staging`** — Pre-producción para QA y testing final
+- **`develop`** — Integración continua de features (branch de desarrollo activo)
+
+#### Estrategia de promoción:
+
+```
+┌─────────────┐
+│   develop   │  ← PRs desde feature/* (desarrollo activo)
+└──────┬──────┘
+       │ merge (cuando se completa sprint/milestone)
+       ↓
+┌─────────────┐
+│   staging   │  ← Testing y QA
+└──────┬──────┘
+       │ merge (solo después de QA OK)
+       ↓
+┌─────────────┐
+│    main     │  ← Producción (código estable + deployment)
+└─────────────┘
+```
+
+**Reglas importantes:**
+
+- ✅ Features se crean desde `develop`: `git checkout -b feature/xxx develop`
+- ✅ PRs de features van hacia `develop`, **nunca directo a main o staging**
+- ✅ `develop` → `staging`: Merge cuando se completa un sprint o milestone
+- ✅ `staging` → `main`: Merge **solo después** de QA aprobado
+- ❌ NUNCA hacer merge directo de feature → main
+- ❌ NUNCA hacer commits directos en `main`, `staging` o `develop`
+- ❌ NUNCA hacer `git push --force` en branches principales
+
+#### Branches de trabajo:
+
+```
+feature/<nombre-descriptivo>    # Nuevas funcionalidades UI/UX
+fix/<nombre-del-bug>            # Corrección de bugs
+refactor/<area>                 # Refactorización de componentes
+chore/<tarea>                   # Mantenimiento (deps, config, etc.)
+style/<componente>              # Ajustes de estilos/diseño
+```
+
+#### Ejemplos reales de este proyecto frontend:
+
+```bash
+feature/margin-table            # Tabla editable de márgenes
+feature/client-dialogs          # Diálogos de crear/editar cliente
+feature/plant-selector          # Selector de plantas
+feature/responsive-design       # Adaptación responsive
+fix/cache-update-bug            # Fix del bug de caché de Apollo
+refactor/hooks-modularity       # Separación de hooks
+style/mobile-improvements       # Mejoras visuales mobile
+chore/upgrade-nextjs            # Upgrade a Next.js 16
+```
+
+---
+
+### Mantener Branch Actualizado con Develop
+
+#### Estrategia recomendada: **Rebase con develop**
+
+```bash
+# 1. Estando en tu feature branch
+git checkout feature/margin-table
+
+# 2. Traer últimos cambios de develop
+git fetch origin develop
+
+# 3. Rebase interactivo
+git rebase origin/develop
+
+# 4. Si hay conflictos, resolverlos y continuar
+git add .
+git rebase --continue
+
+# 5. Forzar push (solo en branches personales)
+git push --force-with-lease origin feature/margin-table
+```
+
+#### Workflow completo con develop → staging → main:
+
+```bash
+# ──────────────────────────────────────────────────────────
+# Día 1: Crear feature branch desde develop
+# ──────────────────────────────────────────────────────────
+git checkout develop
+git pull origin develop
+git checkout -b feature/margin-table
+
+# ... trabajar en componentes React ...
+git add .
+git commit -m "feat: add MarginTable component with inline editing"
+git push origin feature/margin-table
+
+# ──────────────────────────────────────────────────────────
+# Día 2: Actualizar con cambios de develop
+# ──────────────────────────────────────────────────────────
+git fetch origin develop
+git rebase origin/develop
+git push --force-with-lease origin feature/margin-table
+
+# ──────────────────────────────────────────────────────────
+# Día 3: Feature completa - PR hacia develop
+# ──────────────────────────────────────────────────────────
+git fetch origin develop
+git rebase origin/develop
+pnpm lint    # Verificar linting
+pnpm build   # Verificar que compila
+git push --force-with-lease origin feature/margin-table
+# Crear Pull Request: feature/margin-table → develop
+
+# ──────────────────────────────────────────────────────────
+# Después del merge a develop: Deploy a staging
+# ──────────────────────────────────────────────────────────
+git checkout staging
+git pull origin staging
+git merge develop
+git push origin staging
+# Vercel/CI despliega automáticamente a https://staging.app.com
+
+# ──────────────────────────────────────────────────────────
+# Después de QA en staging: Deploy a producción
+# ──────────────────────────────────────────────────────────
+git checkout main
+git pull origin main
+git merge staging
+git tag -a v1.2.0 -m "Release v1.2.0: Margin configuration UI"
+git push origin main --tags
+# Vercel/CI despliega automáticamente a https://app.com
+```
+
+---
+
+### Manejo de Conflictos en Componentes React
+
+#### Escenario común en frontend:
+
+Dos desarrolladores editando el mismo componente o hook:
+
+- **Developer A (tú):** Agregando funcionalidad de edición inline
+- **Developer B:** Agregando funcionalidad de filtros
+
+#### Ejemplo: Conflicto en `use-margin-config.ts`
+
+**Conflicto durante rebase:**
+
+```typescript
+<<<<<<< HEAD (develop - Developer B)
+// Developer B agregó filtros
+const [filters, setFilters] = useState({ clientType: null, search: '' });
+
+const filteredRows = useMemo(() => {
+  return clientTypeRows.filter(row => 
+    !filters.clientType || row.clientType.id === filters.clientType
+  );
+}, [clientTypeRows, filters]);
+=======
+// Tú agregaste draft management
+const { draft, userEdits, updateMargin, resetDraft, hasChanges } =
+  useMarginDraft(margins);
+
+const handleSave = useCallback(async () => {
+  await save(userEdits);
+}, [save, userEdits]);
+>>>>>>> feature/margin-table
+```
+
+**Resolución: Combinar ambas funcionalidades:**
+
+```typescript
+// ✅ Ambos cambios son compatibles, incluir ambos
+const [filters, setFilters] = useState({ clientType: null, search: '' });
+
+const { draft, userEdits, updateMargin, resetDraft, hasChanges } =
+  useMarginDraft(margins);
+
+const filteredRows = useMemo(() => {
+  return clientTypeRows.filter(row => 
+    !filters.clientType || row.clientType.id === filters.clientType
+  );
+}, [clientTypeRows, filters]);
+
+const handleSave = useCallback(async () => {
+  await save(userEdits);
+}, [save, userEdits]);
+```
+
+```bash
+git add modules/margin-config/hooks/use-margin-config.ts
+git rebase --continue
+pnpm lint && pnpm build  # Verificar que todo funciona
+git push --force-with-lease origin feature/margin-table
+```
+
+---
+
+### Prevención de Conflictos en Frontend
+
+#### 1. **Modularidad de componentes:**
+
+```
+✅ Bueno: Cada dev en su propio componente
+Developer A → margin-table.tsx
+Developer B → filter-panel.tsx
+
+❌ Malo: Ambos editando el mismo archivo
+Developer A → page.tsx (líneas 1-100)
+Developer B → page.tsx (líneas 50-150) ← ¡Conflicto seguro!
+```
+
+#### 2. **Atomic Design para componentes:**
+
+```
+shared/components/ui/     ← Componentes base (button, input)
+modules/margin-config/    ← Feature-specific components
+  ├── table/              ← Sub-componentes de tabla
+  └── dialogs/            ← Sub-componentes de diálogos
+```
+
+Esto reduce conflictos porque cada dev trabaja en su carpeta específica.
+
+#### 3. **Comunicación para shared hooks:**
+
+```bash
+# Si vas a modificar un hook compartido, avisar:
+"Voy a refactorizar use-margin-config.ts"
+
+# Otros devs esperan o coordinan para no causar conflictos
+```
+
+---
+
+### Deployment Automático con Vercel
+
+#### Setup recomendado:
+
+```yaml
+# vercel.json (o configuración en dashboard)
+{
+  "git": {
+    "deploymentEnabled": {
+      "main": true,      # → https://app.com
+      "staging": true,   # → https://staging.app.com
+      "develop": true    # → https://dev.app.com
+    }
+  }
+}
+```
+
+**Flujo de deployment:**
+
+- Push a `develop` → Auto-deploy a `https://dev.app.com`
+- Push a `staging` → Auto-deploy a `https://staging.app.com`
+- Push a `main` → Auto-deploy a `https://app.com` (producción)
+
+---
+
+### Best Practices Específicas del Frontend
+
+✅ **Lint antes de push:** `pnpm lint` siempre antes de crear PR  
+✅ **Build verification:** `pnpm build` para verificar que no hay errores de TypeScript  
+✅ **Component isolation:** Cada feature en su carpeta de módulo  
+✅ **Shared components stable:** No modificar `shared/ui/` sin consenso del equipo  
+✅ **Tailwind classes:** Usar utilidades de Tailwind, evitar CSS custom que cause conflictos  
+✅ **TypeScript strict:** Nunca usar `any`, siempre tipar correctamente  
+✅ **Hooks modulares:** Un hook = una responsabilidad (fácil de mantener sin conflictos)
+
+---
+
 ## Licencia
 
 MIT
