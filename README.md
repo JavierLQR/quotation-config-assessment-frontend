@@ -4,8 +4,94 @@ Interfaz administrativa moderna y responsive para gestionar la configuración de
 
 ---
 
+## 📦 Ubicación de Entregables (Frontend)
+
+### 3️⃣ Componentes React (Tabla de Márgenes)
+
+**Componente principal de la tabla:**
+
+| Componente | Ubicación | Descripción |
+|------------|-----------|-------------|
+| **Tabla principal** | [`modules/margin-config/components/table/margin-table.tsx`](./modules/margin-config/components/table/margin-table.tsx) | Tabla completa con agrupación |
+| **Grupo por tipo** | [`modules/margin-config/components/table/client-type-group.tsx`](./modules/margin-config/components/table/client-type-group.tsx) | Agrupación expandible/colapsable |
+| **Header del grupo** | [`modules/margin-config/components/table/client-type-header.tsx`](./modules/margin-config/components/table/client-type-header.tsx) | Header con botón expandir/colapsar |
+| **Fila tipo (grupo)** | [`modules/margin-config/components/table/client-type-margin-row.tsx`](./modules/margin-config/components/table/client-type-margin-row.tsx) | Fila del tipo de cliente |
+| **Fila de cliente** | [`modules/margin-config/components/table/client-row.tsx`](./modules/margin-config/components/table/client-row.tsx) | Fila individual con datos del cliente |
+| **Celda editable** | [`modules/margin-config/components/table/margin-cell.tsx`](./modules/margin-config/components/table/margin-cell.tsx) | Celda de margen con edición inline |
+| **Panel contenedor** | [`modules/margin-config/components/margin-panel.tsx`](./modules/margin-config/components/margin-panel.tsx) | Panel que envuelve la tabla |
+
+**Hooks de lógica:**
+- [`modules/margin-config/hooks/use-margin-config.ts`](./modules/margin-config/hooks/use-margin-config.ts) - Orquestador principal
+- [`modules/margin-config/hooks/use-margin-draft.ts`](./modules/margin-config/hooks/use-margin-draft.ts) - Gestión del draft y userEdits
+- [`modules/margin-config/hooks/use-save-margin.ts`](./modules/margin-config/hooks/use-save-margin.ts) - Lógica de guardado con Apollo
+- [`modules/margin-config/hooks/use-client-actions.ts`](./modules/margin-config/hooks/use-client-actions.ts) - CRUD de clientes
+
+**Diálogos/Modales:**
+- [`modules/margin-config/components/dialogs/create-client-dialog.tsx`](./modules/margin-config/components/dialogs/create-client-dialog.tsx) - Modal para crear cliente
+- [`modules/margin-config/components/dialogs/edit-client-dialog.tsx`](./modules/margin-config/components/dialogs/edit-client-dialog.tsx) - Modal para editar cliente
+
+**Toolbar:**
+- [`modules/margin-config/components/toolbar/plant-selector.tsx`](./modules/margin-config/components/toolbar/plant-selector.tsx) - Selector de planta
+- [`modules/margin-config/components/toolbar/save-toolbar.tsx`](./modules/margin-config/components/toolbar/save-toolbar.tsx) - Botón guardar con badge
+
+**Página principal:**
+- [`app/page.tsx`](./app/page.tsx) - Orquesta todos los componentes
+
+**Características implementadas:**
+- ✅ Tabla agrupada por tipo de cliente (expandible/colapsable)
+- ✅ Edición inline de márgenes (click → editar → Enter/Esc)
+- ✅ Alertas visuales para márgenes ≤ 5% (color rojo)
+- ✅ 8 columnas de rangos de volumen (300kg, 500kg, 1T, 3T, 5T, 10T, 20T, 30T)
+- ✅ Crear y editar clientes con modales
+- ✅ Selector de tipo de cliente con "Sin tipo de cliente"
+- ✅ Selector de planta
+- ✅ Botón guardar sticky (siempre visible)
+- ✅ Badge "Sin guardar" cuando hay cambios pendientes
+- ✅ Toasts con Sonner para feedback
+- ✅ Responsive (mobile, tablet, desktop)
+- ✅ Optimizaciones: cache-first, refetch inteligente
+
+---
+
+### 4️⃣ Instrucciones para Correr el Proyecto (Frontend)
+
+**README completo:** [`README.md`](./README.md) (este archivo)
+
+**Quick Start:**
+
+```bash
+# 1. Instalar dependencias
+pnpm install
+
+# 2. Configurar variables de entorno
+cp .env.example .env.local
+# Editar .env.local:
+# NEXT_PUBLIC_GRAPHQL_URL=http://localhost:4000/api-v1/graphql
+
+# 3. Iniciar el servidor de desarrollo
+pnpm dev
+
+# 4. Abrir en navegador
+# http://localhost:3000
+```
+
+**Secciones importantes del README:**
+- [Variables de entorno](#variables-de-entorno)
+- [Instalación y ejecución](#instalación-y-ejecución)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Arquitectura y patrones](#arquitectura-y-patrones)
+- [Optimizaciones](#optimizaciones)
+- [Decisiones técnicas](#decisiones-técnicas)
+
+**Requisito previo:**
+- El backend GraphQL debe estar corriendo en `http://localhost:4000`
+- Ver: [Backend README](../laik-tech/README.md)
+
+---
+
 ## 📋 Tabla de contenidos
 
+- [Ubicación de Entregables (Frontend)](#-ubicación-de-entregables-frontend)
 - [Descripción general](#descripción-general)
 - [Stack tecnológico](#stack-tecnológico)
 - [Características principales](#características-principales)
@@ -16,6 +102,9 @@ Interfaz administrativa moderna y responsive para gestionar la configuración de
 - [Arquitectura y patrones](#arquitectura-y-patrones)
 - [Optimizaciones](#optimizaciones)
 - [Decisiones técnicas](#decisiones-técnicas)
+- [Scripts disponibles](#scripts-disponibles)
+- [Troubleshooting](#troubleshooting)
+- [Git Workflow y Branching Strategy](#git-workflow-y-branching-strategy)
 
 ---
 
